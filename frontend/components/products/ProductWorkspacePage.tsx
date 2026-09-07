@@ -17,6 +17,7 @@ import {
   updateProduct,
 } from "@/services"
 import type { VendorProductService } from "@/services"
+import { notifyUser } from "@/services/utils/notificationService"
 
 export default function ProductsPage() {
   return (
@@ -34,7 +35,7 @@ function ProductsPageContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [username, setUsername] = useState<string>("")
-  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "">("")
+  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "admin" | "">("")
   const [buyerType, setBuyerType] = useState<string>("")
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<VendorProductService | null>(null)
@@ -184,9 +185,13 @@ function ProductsPageContent() {
       setProducts((prev) => [created, ...prev])
       setShowCreateModal(false)
       resetCreateForm()
-      setActionMessage("Product added to catalog.")
+      const successMsg = "Product added to catalog successfully."
+      setActionMessage(successMsg)
+      notifyUser({ type: "success", title: "Product Created", message: successMsg })
     } catch (error) {
-      setCreateMessage(getApiErrorMessage(error, "Could not add product/service. Check inputs and try again."))
+      const errMsg = getApiErrorMessage(error, "Could not add product/service. Check inputs and try again.")
+      setCreateMessage(errMsg)
+      notifyUser({ type: "error", title: "Addition Failed", message: errMsg })
     } finally {
       setCreating(false)
     }
@@ -238,11 +243,17 @@ function ProductsPageContent() {
       })
       setProducts((prev) => prev.map((item) => (item.id === productId ? updated : item)))
       setEditingProductId(null)
-      setActionMessage("Product updated successfully.")
-    } catch {
-      setActionMessage("Could not update product. Please try again.")
+      const successMsg = "Product updated successfully."
+      setActionMessage(successMsg)
+      notifyUser({ type: "success", title: "Product Updated", message: successMsg })
+    } catch (error) {
+      const errMsg = getApiErrorMessage(error, "Could not update product. Please try again.")
+      setActionMessage(errMsg)
+      notifyUser({ type: "error", title: "Update Failed", message: errMsg })
     } finally {
       setUpdating(false)
+      // Auto-clear message after 5 seconds
+      setTimeout(() => setActionMessage(""), 5000)
     }
   }
 
@@ -262,10 +273,14 @@ function ProductsPageContent() {
       setDeleting(true)
       await deleteProduct(deleteTarget.id)
       setProducts((prev) => prev.filter((item) => item.id !== deleteTarget.id))
-      setActionMessage("Product deleted.")
+      const successMsg = `Product "${deleteTarget.name}" deleted.`
+      setActionMessage(successMsg)
+      notifyUser({ type: "info", title: "Product Deleted", message: successMsg })
       setDeleteTarget(null)
     } catch {
-      setActionMessage("Could not delete product. Please try again.")
+      const errMsg = "Could not delete product. Please try again."
+      setActionMessage(errMsg)
+      notifyUser({ type: "error", title: "Delete Failed", message: errMsg })
     } finally {
       setDeleting(false)
     }

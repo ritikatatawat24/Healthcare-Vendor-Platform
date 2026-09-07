@@ -19,33 +19,41 @@ class VendorProductServiceViewSet(viewsets.ModelViewSet):
         return VendorProductService.objects.filter(is_active=True).order_by("-id")
 
     def perform_create(self, serializer):
-        role = get_or_create_account_role(self.request.user)
-        if role != "supplier":
-            raise PermissionDenied("Only suppliers can add products or services.")
+        user = self.request.user
+        role = get_or_create_account_role(user)
+        
+        if role != "supplier" and not user.is_superuser:
+            raise PermissionDenied("Permission Denied: Your account role is not 'supplier'. Only suppliers can manage the catalog.")
 
-        vendor_profile, _ = VendorProfile.objects.get_or_create(
-            user=self.request.user,
-            defaults={
-                "company_name": f"{self.request.user.username} Vendor",
-                "gst_number": "",
-                "license_number": "",
-                "address": "",
-            },
-        )
-        serializer.save(vendor=vendor_profile)
+        try:
+            vendor_profile, created = VendorProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "company_name": f"{user.username}'s Medical Supplies",
+                    "gst_number": "PENDING",
+                    "license_number": "PENDING",
+                    "address": "Not Provided",
+                    "verification_status": "pending"
+                },
+            )
+            serializer.save(vendor=vendor_profile)
+        except Exception as e:
+            raise PermissionDenied(f"System Error: Could not link product to your vendor profile. Detail: {str(e)}")
 
     def perform_update(self, serializer):
-        role = get_or_create_account_role(self.request.user)
-        if role != "supplier":
-            raise PermissionDenied("Only suppliers can edit products or services.")
-        if serializer.instance.vendor.user_id != self.request.user.id:
-            raise PermissionDenied("You can only edit your own products or services.")
+        user = self.request.user
+        role = get_or_create_account_role(user)
+        is_owner = serializer.instance.vendor.user_id == user.id
+        
+        if not user.is_superuser and (role != "supplier" or not is_owner):
+            raise PermissionDenied("Permission Denied: You can only edit your own products or services.")
         serializer.save()
 
     def perform_destroy(self, instance):
-        role = get_or_create_account_role(self.request.user)
-        if role != "supplier":
-            raise PermissionDenied("Only suppliers can delete products or services.")
-        if instance.vendor.user_id != self.request.user.id:
-            raise PermissionDenied("You can only delete your own products or services.")
+        user = self.request.user
+        role = get_or_create_account_role(user)
+        is_owner = instance.vendor.user_id == user.id
+        
+        if not user.is_superuser and (role != "supplier" or not is_owner):
+            raise PermissionDenied("Permission Denied: You can only delete your own products or services.")
         instance.delete()

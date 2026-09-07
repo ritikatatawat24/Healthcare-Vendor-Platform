@@ -58,7 +58,7 @@ export default function AnalyticsPage() {
   const [products, setProducts] = useState<VendorProductService[]>([])
   const [rfqs, setRfqs] = useState<VendorRfq[]>([])
   const [username, setUsername] = useState("")
-  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "">("")
+  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "admin" | "">("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 

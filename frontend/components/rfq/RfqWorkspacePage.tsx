@@ -28,6 +28,7 @@ import {
   logoutUser,
 } from "@/services"
 import type { VendorProductService, VendorQuotationInput, VendorRfq, VendorRfqInput } from "@/services"
+import { notifyUser } from "@/services/utils/notificationService"
 
 const emptyRfqForm: VendorRfqInput = {
   title: "",
@@ -129,7 +130,7 @@ function RfqPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [username, setUsername] = useState("")
-  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "">("")
+  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "admin" | "">("")
   const [buyerType, setBuyerType] = useState<"hospital" | "pharmacy" | "ngo" | "clinic" | null>(null)
   const [products, setProducts] = useState<VendorProductService[]>([])
   const [rfqs, setRfqs] = useState<VendorRfq[]>([])
@@ -508,18 +509,22 @@ function RfqPageContent() {
         setRfqs((prev) => prev.map((item) => (item.id === editingRfqId ? updated : item)))
         setEditingRfqId(null)
         setRfqForm(emptyRfqForm)
-        setMessage(`RFQ #${updated.id} updated successfully.`)
+        const updMsg = `RFQ #${updated.id} updated successfully.`
+        setMessage(updMsg)
+        notifyUser({ type: "success", title: "RFQ Updated", message: updMsg })
       } else {
         const created = await createRfq(rfqForm)
         setRfqs((prev) => [created, ...prev])
         setRecentlyPublishedRfqId(created.id)
         setRfqForm(emptyRfqForm)
-        setMessage(`RFQ #${created.id} issued to the vendor market.`)
+        const pubMsg = `RFQ #${created.id} published successfully to the vendor market.`
+        setMessage(pubMsg)
+        notifyUser({ type: "success", title: "RFQ Published! 🎉", message: pubMsg })
       }
     } catch (error) {
-      setMessage(
-        getApiErrorMessage(error, editingRfqId ? "Could not update RFQ. Please try again." : "Could not create RFQ. Please try again.")
-      )
+      const errMsg = getApiErrorMessage(error, editingRfqId ? "Could not update RFQ. Please try again." : "Could not create RFQ. Please try again.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Action Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -550,11 +555,13 @@ function RfqPageContent() {
       await refreshRfqs()
       setQuoteForm(emptyQuoteForm)
       setActiveQuoteRfqId(null)
-      setMessage(`Quotation submitted against RFQ #${rfq.id}.`)
+      const qMsg = `Quotation submitted against RFQ #${rfq.id}.`
+      setMessage(qMsg)
+      notifyUser({ type: "success", title: "Quotation Submitted", message: qMsg })
     } catch (error) {
-      setMessage(
-        getApiErrorMessage(error, "Could not submit quotation. Check RFQ eligibility, deadline, and duplicate quote rules.")
-      )
+      const errMsg = getApiErrorMessage(error, "Could not submit quotation. Check RFQ eligibility, deadline, and duplicate quote rules.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Submission Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -596,9 +603,13 @@ function RfqPageContent() {
       await editQuotation(rfq.id, editingQuotationContext.quotationId, editingQuoteForm)
       await refreshRfqs()
       cancelEditingQuotation()
-      setMessage(`Quotation for RFQ #${rfq.id} updated successfully.`)
+      const uqMsg = `Quotation for RFQ #${rfq.id} updated successfully.`
+      setMessage(uqMsg)
+      notifyUser({ type: "success", title: "Quotation Updated", message: uqMsg })
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "Could not update quotation."))
+      const errMsg = getApiErrorMessage(error, "Could not update quotation.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Update Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -637,11 +648,13 @@ function RfqPageContent() {
         orderId: createdOrder.id,
       })
       await refreshRfqs()
-      setMessage(
-        `RFQ #${rfq.id} awarded to ${selectedQuote.supplier_company || selectedQuote.supplier_name}. Order #${createdOrder.id} created.`
-      )
+      const awardMsg = `RFQ #${rfq.id} awarded to ${selectedQuote.supplier_company || selectedQuote.supplier_name}. Order #${createdOrder.id} created.`
+      setMessage(awardMsg)
+      notifyUser({ type: "success", title: "RFQ Awarded", message: awardMsg })
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "Could not award the quotation or create the order."))
+      const errMsg = getApiErrorMessage(error, "Could not award the quotation or create the order.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Award Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -674,10 +687,14 @@ function RfqPageContent() {
       setMessage("")
       await rejectQuotation(rejectModal.rfqId, rejectModal.quotationId, rejectModal.reason)
       await refreshRfqs()
-      setMessage(`Quotation #${rejectModal.quotationId} rejected for RFQ #${rejectModal.rfqId}.`)
+      const rejMsg = `Quotation #${rejectModal.quotationId} rejected for RFQ #${rejectModal.rfqId}.`
+      setMessage(rejMsg)
+      notifyUser({ type: "info", title: "Quotation Rejected", message: rejMsg })
       closeRejectQuotationModal()
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "Could not reject quotation."))
+      const errMsg = getApiErrorMessage(error, "Could not reject quotation.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Rejection Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -688,9 +705,13 @@ function RfqPageContent() {
       setMessage("")
       await closeRfq(rfqId)
       await refreshRfqs()
-      setMessage(`RFQ #${rfqId} closed.`)
+      const clMsg = `RFQ #${rfqId} has been closed.`
+      setMessage(clMsg)
+      notifyUser({ type: "info", title: "RFQ Closed", message: clMsg })
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "Could not close RFQ."))
+      const errMsg = getApiErrorMessage(error, "Could not close RFQ.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Close Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -702,9 +723,13 @@ function RfqPageContent() {
       setMessage("")
       await reopenRfq(rfqId)
       await refreshRfqs()
-      setMessage(`RFQ #${rfqId} reopened.`)
+      const roMsg = `RFQ #${rfqId} has been reopened.`
+      setMessage(roMsg)
+      notifyUser({ type: "success", title: "RFQ Reopened", message: roMsg })
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "Could not reopen RFQ."))
+      const errMsg = getApiErrorMessage(error, "Could not reopen RFQ.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Reopen Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }
@@ -731,12 +756,17 @@ function RfqPageContent() {
     try {
       setSubmitting(true)
       setMessage("")
-      await deleteRfq(deleteModal.rfqId)
+      const rfqIdToDelete = deleteModal.rfqId
+      await deleteRfq(rfqIdToDelete)
       await refreshRfqs()
-      setMessage(`RFQ #${deleteModal.rfqId} deleted.`)
+      const delMsg = `RFQ #${rfqIdToDelete} has been deleted.`
+      setMessage(delMsg)
+      notifyUser({ type: "info", title: "RFQ Deleted", message: delMsg })
       closeDeleteRfqModal()
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "Could not delete RFQ."))
+      const errMsg = getApiErrorMessage(error, "Could not delete RFQ.")
+      setMessage(errMsg)
+      notifyUser({ type: "error", title: "Delete Failed", message: errMsg })
     } finally {
       setSubmitting(false)
     }

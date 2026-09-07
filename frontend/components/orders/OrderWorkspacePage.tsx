@@ -194,7 +194,7 @@ export default function OrderPage() {
   const [orders, setOrders] = useState<VendorOrder[]>([])
   const [userId, setUserId] = useState<number | null>(null)
   const [username, setUsername] = useState<string>("")
-  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "">("")
+  const [userRole, setUserRole] = useState<"supplier" | "buyer" | "admin" | "">("")
   const [buyerType, setBuyerType] = useState<string>("")
   const [feedback, setFeedback] = useState<string>("")
   const [orderFilter, setOrderFilter] = useState<SupplierOrderFilter>("all")

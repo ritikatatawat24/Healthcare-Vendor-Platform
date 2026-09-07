@@ -54,14 +54,18 @@ export const getCurrentUser = async () => {
 }
 
 export const logoutUser = async () => {
-  if (!getToken()) return
-  await axios.post(
-    `${API_URLS.AUTH}/logout/`,
-    {},
-    {
-      headers: getAuthHeaders(),
-    }
-  )
+  const token = getToken()
+  if (!token) return
+  try {
+    await axios.post(
+      `${API_URLS.AUTH}/logout/`,
+      {},
+      { headers: { Authorization: `Token ${token}` } }
+    )
+  } catch {
+    // Swallow any API error (403, 401, network issues).
+    // The local token is cleared by the caller — that's what matters.
+  }
 }
 
 export const resetPassword = async (data: ResetPasswordInput) => {

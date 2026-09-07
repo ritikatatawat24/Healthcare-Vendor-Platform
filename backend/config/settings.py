@@ -5,7 +5,7 @@ import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env", override=True)
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 
@@ -83,19 +83,26 @@ elif use_remote_db:
     if missing_vars:
         raise ValueError(f"USE_REMOTE_DB is True but the following environment variables are missing: {', '.join(missing_vars)}")
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("SUPABASE_DB"),
-        "USER": os.getenv("SUPABASE_USER"),
-        "PASSWORD": os.getenv("SUPABASE_PASSWORD"),
-        "HOST": os.getenv("SUPABASE_HOST"),
-        "PORT": os.getenv("SUPABASE_DB_PORT"),
-        "OPTIONS": {
-            "sslmode": "require",
-        },
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("SUPABASE_DB").strip(),
+            "USER": os.getenv("SUPABASE_USER").strip(),
+            "PASSWORD": os.getenv("SUPABASE_PASSWORD").strip(),
+            "HOST": os.getenv("SUPABASE_HOST").strip(),
+            "PORT": os.getenv("SUPABASE_DB_PORT").strip(),
+            "OPTIONS": {
+                "sslmode": "require",
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = []
@@ -107,6 +114,9 @@ TIME_ZONE = 'UTC'
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
